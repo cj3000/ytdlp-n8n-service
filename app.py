@@ -63,9 +63,13 @@ def download():
         "quiet": True
     }
 
-    # optional cookies (wenn vorhanden)
+ 
+
     if os.path.exists(COOKIE_FILE):
-        ydl_opts["cookiefile"] = COOKIE_FILE
+    print("COOKIE FILE FOUND:", COOKIE_FILE)
+    ydl_opts["cookiefile"] = COOKIE_FILE
+else:
+    print("COOKIE FILE NOT FOUND:", COOKIE_FILE)
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
