@@ -1,77 +1,91 @@
-from flask import Flask, request, jsonify
-import subprocess
-import json
+from flask import Flask, request, jsonify, send_from_directory
 import os
-
-COOKIE_FILE = "/app/www.youtube.com_cookies"
+import yt_dlp
 
 app = Flask(__name__)
 
-@app.get("/")
+DOWNLOAD_DIR = "/downloads"
+COOKIE_FILE = "/cookies/www.youtube.com_cookies.txt"  
+
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+
+# -------------------------
+# HEALTH CHECK
+# -------------------------
+@app.route("/", methods=["GET"])
 def health():
-    return {"status": "ok"}
+    return jsonify({"status": "ok"})
 
-@app.post("/playlist")
+
+# -------------------------
+# PLAYLIST
+# -------------------------
+@app.route("/playlist", methods=["POST"])
 def playlist():
-    url = request.json["url"]
+    data = request.get_json()
+    url = data.get("url")
 
-    result = subprocess.check_output([
-        "yt-dlp",
-        "--flat-playlist",
-        "--dump-json",
-        url
-    ]).decode("utf-8")
+    ydl_opts = {
+        "quiet": True,
+        "extract_flat": True
+    }
 
-    videos = []
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
 
-    for line in result.split("\n"):
-        if not line.strip():
-            continue
-        try:
-            data = json.loads(line)
-            vid = data.get("id")
+    entries = []
+    for e in info.get("entries", []):
+        entries.append({
+            "id": e.get("id"),
+            "title": e.get("title"),
+            "url": f"https://www.youtube.com/watch?v={e.get('id')}"
+        })
 
-            if not vid:
-                continue
+    return jsonify(entries)
 
-            videos.append({
-                "id": vid,
-                "title": data.get("title"),
-                "url": f"https://www.youtube.com/watch?v={vid}"
-            })
 
-        except:
-            pass
-
-    return jsonify(videos)
-
-@app.post("/download")
+# -------------------------
+# DOWNLOAD
+# -------------------------
+@app.route("/download", methods=["POST"])
 def download():
-    url = request.json["url"]
+    data = request.get_json()
+    url = data.get("url")
 
-    subprocess.Popen([
-        "yt-dlp",
-        "-o",
-        "/downloads/%(title)s.%(ext)s",
-        url
-    ])
+    if not url:
+        return jsonify({"error": "missing url"}), 400
 
-    return {"status": "started"}
+    ydl_opts = {
+        "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
+        "format": "best[ext=mp4]/best",
+        "noplaylist": True,
+        "quiet": True
+    }
 
+    # optional cookies (wenn vorhanden)
+    if os.path.exists(COOKIE_FILE):
+        ydl_opts["cookiefile"] = COOKIE_FILE
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+
+    filename = ydl.prepare_filename(info)
+
+    return jsonify({
+        "status": "success",
+        "file": filename.split("/")[-1]
+    })
+
+
+# -------------------------
+# FILE SERVER (WICHTIG)
+# -------------------------
+@app.route("/files/<path:filename>", methods=["GET"])
+def files(filename):
+    return send_from_directory(DOWNLOAD_DIR, filename, as_attachment=False)
+
+
+# -------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-from flask import send_from_directory
-import os
-
-DOWNLOAD_DIR = "/downloads"
-
-@app.route("/files/<filename>")
-def files(filename):
-    return send_from_directory(DOWNLOAD_DIR, filename)
-
-@app.route("/files")
-def list_files():
-    return {
-        "files": os.listdir("/downloads")
-    }
