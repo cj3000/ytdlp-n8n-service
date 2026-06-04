@@ -77,6 +77,14 @@ def download():
         "file": filename.split("/")[-1]
     })
 
+ydl_opts = {
+    "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
+    "format": "best[ext=mp4]/best",
+    "noplaylist": True,
+    "quiet": True,
+}
+if os.path.exists(COOKIE_FILE):
+    ydl_opts["cookiefile"] = COOKIE_FILE
 
 # -------------------------
 # FILE SERVER (WICHTIG)
