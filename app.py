@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 import subprocess
 import json
+import os
+
+COOKIE_FILE = "/app/www.youtube.com_cookies"
 
 app = Flask(__name__)
 
