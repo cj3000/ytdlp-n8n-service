@@ -5,7 +5,7 @@ import yt_dlp
 app = Flask(__name__)
 
 DOWNLOAD_DIR = "/downloads"
-COOKIE_FILE = "/cookies/www.youtube.com_cookies.txt"  
+COOKIE_FILE = "/app/www.youtube.com_cookies.txt"  
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
