@@ -23,8 +23,12 @@ def health():
 # -------------------------
 @app.route("/playlist", methods=["POST"])
 def playlist():
-    data = request.get_json()
-    url = data.get("url")
+    data = request.get_json(silent=True)
+
+    if not data or "url" not in data:
+        return jsonify({"error": "missing url"}), 400
+
+    url = data["url"]
 
     ydl_opts = {
         "quiet": True,
