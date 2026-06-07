@@ -59,10 +59,10 @@ import psycopg2
 def dashboard():
 
     conn = psycopg2.connect(
-        host="nocodb-db",
+        host="nocodb_youtube_db",
         database="postgres",
         user="postgres",
-        password="l51b70f65755q26t24ka"
+        password="jpb4jp24r9ppvyi49rrg"
     )
 
     cur = conn.cursor()
