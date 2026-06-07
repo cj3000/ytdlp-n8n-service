@@ -1,37 +1,49 @@
 from flask import Flask, request, jsonify, send_from_directory, render_template
 import os
 import yt_dlp
+import requests
+import psycopg2
 
 app = Flask(__name__)
 
+# -------------------------
+# CONFIG
+# -------------------------
 DOWNLOAD_DIR = "/downloads"
 VIDEO_DIR = f"{DOWNLOAD_DIR}/videos"
 THUMBNAIL_DIR = f"{DOWNLOAD_DIR}/thumbnails"
 
+COOKIE_FILE = "/app/www.youtube.com_cookies.txt"
+
 os.makedirs(VIDEO_DIR, exist_ok=True)
 os.makedirs(THUMBNAIL_DIR, exist_ok=True)
 
-COOKIE_FILE = "/app/www.youtube.com_cookies.txt"  
-
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
 # -------------------------
-# HELPERS (UTIL FUNCTIONS)
+# HELPERS
 # -------------------------
-
 def download_thumbnail(video_id):
-    os.makedirs(f"{DOWNLOAD_DIR}/thumbnails", exist_ok=True)
-
     url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
-    path = f"{DOWNLOAD_DIR}/thumbnails/{video_id}.jpg"
+    path = f"{THUMBNAIL_DIR}/{video_id}.jpg"
 
-    r = requests.get(url, stream=True)
-    if r.status_code == 200:
-        with open(path, "wb") as f:
-            for chunk in r.iter_content(1024):
-                f.write(chunk)
+    try:
+        r = requests.get(url, stream=True, timeout=10)
+        if r.status_code == 200:
+            with open(path, "wb") as f:
+                for chunk in r.iter_content(1024):
+                    f.write(chunk)
+    except Exception as e:
+        print("Thumbnail download failed:", e)
 
     return path
+
+
+def db_connect():
+    return psycopg2.connect(
+        host="nocodb_youtube_db",
+        database="postgres",
+        user="postgres",
+        password="jpb4jp24r9ppvyi49rrg"
+    )
 
 # -------------------------
 # HEALTH CHECK
@@ -39,7 +51,6 @@ def download_thumbnail(video_id):
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
-
 
 # -------------------------
 # PLAYLIST
@@ -72,31 +83,16 @@ def playlist():
 
     return jsonify(entries)
 
-
 # -------------------------
 # DASHBOARD
 # -------------------------
-import psycopg2
-
 @app.route("/dashboard")
 def dashboard():
-
-    conn = psycopg2.connect(
-        host="nocodb_youtube_db",
-        database="postgres",
-        user="postgres",
-        password="jpb4jp24r9ppvyi49rrg"
-    )
-
+    conn = db_connect()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT
-            video_id,
-            title,
-            url,
-            thumbnail,
-            watched
+        SELECT video_id, title, url, thumbnail, watched
         FROM youtube_videos
         ORDER BY created_at DESC
     """)
@@ -106,22 +102,18 @@ def dashboard():
     cur.close()
     conn.close()
 
-    videos = []
+    videos = [
+        {
+            "video_id": r[0],
+            "title": r[1],
+            "url": r[2],
+            "thumbnail": r[3],
+            "watched": r[4]
+        }
+        for r in rows
+    ]
 
-    for row in rows:
-        videos.append({
-            "video_id": row[0],
-            "title": row[1],
-            "url": row[2],
-            "thumbnail": row[3],
-            "watched": row[4]
-        })
-
-    return render_template(
-        "dashboard.html",
-        videos=videos
-    )
-
+    return render_template("dashboard.html", videos=videos)
 
 # -------------------------
 # DOWNLOAD
@@ -136,9 +128,6 @@ def download():
 
     video_id = url.split("v=")[-1]
 
-    video_path = f"/downloads/videos/{video_id}.mp4"
-    thumb_path = f"/downloads/thumbnails/{video_id}.jpg"
-    
     ydl_opts = {
         "outtmpl": f"{VIDEO_DIR}/%(id)s.%(ext)s",
         "format": "best[ext=mp4]/best",
@@ -147,13 +136,19 @@ def download():
         "quiet": True
     }
 
+    if os.path.exists(COOKIE_FILE):
+        ydl_opts["cookiefile"] = COOKIE_FILE
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+        ydl.extract_info(url, download=True)
+
+    video_path = f"/files/videos/{video_id}.mp4"
+    thumb_path = f"/files/thumbnails/{video_id}.jpg"
 
     download_thumbnail(video_id)
 
-    # DB update
-    conn = psycopg2.connect(...)
+    # DB UPDATE
+    conn = db_connect()
     cur = conn.cursor()
 
     cur.execute("""
@@ -175,12 +170,11 @@ def download():
     })
 
 # -------------------------
-# FILE SERVER (WICHTIG)
+# FILE SERVER
 # -------------------------
-@app.route("/files/<path:filename>", methods=["GET"])
+@app.route("/files/<path:filename>")
 def files(filename):
-    return send_from_directory(DOWNLOAD_DIR, filename, as_attachment=False)
-
+    return send_from_directory(DOWNLOAD_DIR, filename)
 
 # -------------------------
 if __name__ == "__main__":
