@@ -51,6 +51,14 @@ def playlist():
 
 
 # -------------------------
+# DASHBOARD
+# -------------------------
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html", videos=videos)
+
+
+# -------------------------
 # DOWNLOAD
 # -------------------------
 @app.route("/download", methods=["POST"])
