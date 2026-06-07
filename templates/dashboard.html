@@ -13,8 +13,11 @@
     {% for v in videos %}
     <div class="card {% if v.watched %}watched{% endif %}">
         <a href="{{ v.url }}" target="_blank">
-            <img src="{{ v.thumbnail }}">
+            <img src="/files/thumbnails/{{ video.video_id }}.jpg">
             <div class="title">{{ v.title }}</div>
+            <video width="480" controls>
+              <source src="/files/videos/{{ video.video_id }}.mp4" type="video/mp4">
+            </video>
         </a>
     </div>
     {% endfor %}
