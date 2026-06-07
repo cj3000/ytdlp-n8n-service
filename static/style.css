@@ -1,0 +1,31 @@
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.card {
+    background: #222;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.card img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.title {
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+.watched {
+    opacity: 0.4;
+}
