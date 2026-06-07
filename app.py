@@ -62,7 +62,7 @@ def dashboard():
         host="nocodb-db",
         database="postgres",
         user="postgres",
-        password="jpb4jp24r9ppvyi49rrg"
+        password="l51b70f65755q26t24ka"
     )
 
     cur = conn.cursor()
