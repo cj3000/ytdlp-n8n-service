@@ -43,7 +43,7 @@ def playlist():
         entries.append({
             "id": e.get("id"),
             "title": e.get("title"),
-            "url": f"https://www.youtube.com/watch?v={e.get('id')}"
+            "url": f"https://www.youtube.com/watch?v={e.get('id')}",
             "thumbnail": f"https://img.youtube.com/vi/{e.get('id')}/hqdefault.jpg"
         })
 
