@@ -133,7 +133,8 @@ def download():
         "format": "best[ext=mp4]/best",
         "merge_output_format": "mp4",
         "noplaylist": True,
-        "quiet": True
+        "quiet": True,
+        "cookiefile": COOKIE_FILE
     }
 
     if os.path.exists(COOKIE_FILE):
