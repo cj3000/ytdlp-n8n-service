@@ -134,7 +134,12 @@ def download():
         "merge_output_format": "mp4",
         "noplaylist": True,
         "quiet": True,
-        "cookiefile": COOKIE_FILE
+        "cookiefile": COOKIE_FILE,
+        "extractor_args": {
+        "youtube": {
+            "player_client": ["android", "web"]
+        }
+    }
     }
 
     if os.path.exists(COOKIE_FILE):
