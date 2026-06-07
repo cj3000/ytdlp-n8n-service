@@ -139,21 +139,17 @@ def download():
     video_path = f"/downloads/videos/{video_id}.mp4"
     thumb_path = f"/downloads/thumbnails/{video_id}.jpg"
 
-   ydl_opts = {
-    "outtmpl": f"{VIDEO_DIR}/%(id)s.%(ext)s",
-    "format": "best[ext=mp4]/best",
-    "merge_output_format": "mp4",
-    "noplaylist": True,
-    "quiet": True
-}
-
-    if os.path.exists(COOKIE_FILE):
-        ydl_opts["cookiefile"] = COOKIE_FILE
+  ydl_opts = {
+        "outtmpl": f"{VIDEO_DIR}/%(id)s.%(ext)s",
+        "format": "best[ext=mp4]/best",
+        "merge_output_format": "mp4",
+        "noplaylist": True,
+        "quiet": True
+    }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
 
-    # Thumbnail speichern
     download_thumbnail(video_id)
 
     # DB update
