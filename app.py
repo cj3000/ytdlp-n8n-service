@@ -5,6 +5,12 @@ import yt_dlp
 app = Flask(__name__)
 
 DOWNLOAD_DIR = "/downloads"
+VIDEO_DIR = f"{DOWNLOAD_DIR}/videos"
+THUMBNAIL_DIR = f"{DOWNLOAD_DIR}/thumbnails"
+
+os.makedirs(VIDEO_DIR, exist_ok=True)
+os.makedirs(THUMBNAIL_DIR, exist_ok=True)
+
 COOKIE_FILE = "/app/www.youtube.com_cookies.txt"  
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -133,12 +139,13 @@ def download():
     video_path = f"/downloads/videos/{video_id}.mp4"
     thumb_path = f"/downloads/thumbnails/{video_id}.jpg"
 
-    ydl_opts = {
-        "outtmpl": f"{DOWNLOAD_DIR}/videos/{video_id}.%(ext)s",
-        "format": "best[ext=mp4]/best",
-        "noplaylist": True,
-        "quiet": True
-    }
+   ydl_opts = {
+    "outtmpl": f"{VIDEO_DIR}/%(id)s.%(ext)s",
+    "format": "best[ext=mp4]/best",
+    "merge_output_format": "mp4",
+    "noplaylist": True,
+    "quiet": True
+}
 
     if os.path.exists(COOKIE_FILE):
         ydl_opts["cookiefile"] = COOKIE_FILE
