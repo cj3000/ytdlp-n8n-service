@@ -138,7 +138,7 @@ def download():
 
     video_path = f"/downloads/videos/{video_id}.mp4"
     thumb_path = f"/downloads/thumbnails/{video_id}.jpg"
-
+    
     ydl_opts = {
         "outtmpl": f"{VIDEO_DIR}/%(id)s.%(ext)s",
         "format": "best[ext=mp4]/best",
