@@ -9,6 +9,23 @@ COOKIE_FILE = "/app/www.youtube.com_cookies.txt"
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
+# -------------------------
+# HELPERS (UTIL FUNCTIONS)
+# -------------------------
+
+def download_thumbnail(video_id):
+    os.makedirs(f"{DOWNLOAD_DIR}/thumbnails", exist_ok=True)
+
+    url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+    path = f"{DOWNLOAD_DIR}/thumbnails/{video_id}.jpg"
+
+    r = requests.get(url, stream=True)
+    if r.status_code == 200:
+        with open(path, "wb") as f:
+            for chunk in r.iter_content(1024):
+                f.write(chunk)
+
+    return path
 
 # -------------------------
 # HEALTH CHECK
@@ -111,39 +128,48 @@ def download():
     if not url:
         return jsonify({"error": "missing url"}), 400
 
+    video_id = url.split("v=")[-1]
+
+    video_path = f"/downloads/videos/{video_id}.mp4"
+    thumb_path = f"/downloads/thumbnails/{video_id}.jpg"
+
     ydl_opts = {
-        "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
+        "outtmpl": f"{DOWNLOAD_DIR}/videos/{video_id}.%(ext)s",
         "format": "best[ext=mp4]/best",
         "noplaylist": True,
         "quiet": True
     }
 
- 
-
     if os.path.exists(COOKIE_FILE):
-       print("COOKIE FILE FOUND:", COOKIE_FILE)
-       ydl_opts["cookiefile"] = COOKIE_FILE
-    else:
-       print("COOKIE FILE NOT FOUND:", COOKIE_FILE)
+        ydl_opts["cookiefile"] = COOKIE_FILE
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
 
-    filename = ydl.prepare_filename(info)
+    # Thumbnail speichern
+    download_thumbnail(video_id)
+
+    # DB update
+    conn = psycopg2.connect(...)
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE youtube_videos
+        SET local_video_path = %s,
+            local_thumbnail_path = %s,
+            download_status = 'done'
+        WHERE video_id = %s
+    """, (video_path, thumb_path, video_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
     return jsonify({
         "status": "success",
-        "file": filename.split("/")[-1]
+        "video_id": video_id,
+        "file": video_path
     })
-
-ydl_opts = {
-    "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
-    "format": "best[ext=mp4]/best",
-    "noplaylist": True,
-    "quiet": True,
-}
-if os.path.exists(COOKIE_FILE):
-    ydl_opts["cookiefile"] = COOKIE_FILE
 
 # -------------------------
 # FILE SERVER (WICHTIG)
