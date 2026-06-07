@@ -53,9 +53,51 @@ def playlist():
 # -------------------------
 # DASHBOARD
 # -------------------------
+import psycopg2
+
 @app.route("/dashboard")
 def dashboard():
-    return render_template("dashboard.html", videos=videos)
+
+    conn = psycopg2.connect(
+        host="nocodb-db",
+        database="postgres",
+        user="postgres",
+        password="jpb4jp24r9ppvyi49rrg"
+    )
+
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            video_id,
+            title,
+            url,
+            thumbnail,
+            watched
+        FROM youtube_videos
+        ORDER BY created_at DESC
+    """)
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    videos = []
+
+    for row in rows:
+        videos.append({
+            "video_id": row[0],
+            "title": row[1],
+            "url": row[2],
+            "thumbnail": row[3],
+            "watched": row[4]
+        })
+
+    return render_template(
+        "dashboard.html",
+        videos=videos
+    )
 
 
 # -------------------------
