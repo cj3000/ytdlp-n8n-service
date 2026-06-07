@@ -1,1 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
 
+<body>
+
+<h1>🎬 My YouTube Library</h1>
+
+<div class="grid">
+    {% for v in videos %}
+    <div class="card {% if v.watched %}watched{% endif %}">
+        <a href="{{ v.url }}" target="_blank">
+            <img src="{{ v.thumbnail }}">
+            <div class="title">{{ v.title }}</div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>
